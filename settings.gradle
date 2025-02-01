@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        mavenCentral()
+        gradlePluginPortal()
+        maven {
+            name = 'LWJGL'
+            url = 'https://repo.lwjgl.org/'
+        }
+    }
+}
