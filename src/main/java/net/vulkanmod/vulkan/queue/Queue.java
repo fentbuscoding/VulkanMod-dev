@@ -9,6 +9,7 @@ import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkQueue;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
+import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.IntBuffer;
 import java.util.stream.IntStream;
@@ -24,6 +25,8 @@ public abstract class Queue {
     private final VkQueue queue;
 
     protected CommandPool commandPool;
+
+    private static final VkSubmitInfo SUBMIT_INFO = VkSubmitInfo.calloc().sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
 
     public synchronized CommandPool.CommandBuffer beginCommands() {
         try (MemoryStack stack = stackPush()) {
@@ -49,7 +52,14 @@ public abstract class Queue {
 
     public synchronized long submitCommands(CommandPool.CommandBuffer commandBuffer) {
         try (MemoryStack stack = stackPush()) {
-            return commandBuffer.submitCommands(stack, queue, false);
+            vkEndCommandBuffer(commandBuffer.getHandle());
+            vkResetFences(DeviceManager.vkDevice, commandBuffer.getFence());
+
+            SUBMIT_INFO.pCommandBuffers(stack.pointers(commandBuffer.getHandle()));
+            vkQueueSubmit(queue, SUBMIT_INFO, commandBuffer.getFence());
+
+            commandBuffer.setSubmitted(true);
+            return commandBuffer.getFence();
         }
     }
 

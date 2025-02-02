@@ -62,6 +62,7 @@ dependencies {
 	//MoltenVK
 	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosArmNatives"))
+	implementation "org.lwjgl:lwjgl-vulkan:${lwjglVersion}"
 }
 
 processResources {

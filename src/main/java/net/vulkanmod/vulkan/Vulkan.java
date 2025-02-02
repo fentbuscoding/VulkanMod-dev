@@ -34,8 +34,16 @@ import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
-import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.KHRDeferredHostOperations.VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME;
+import static org.lwjgl.vulkan.VK13.*;
 import static org.lwjgl.vulkan.VK13.VK_API_VERSION_1_3;
+import static org.lwjgl.vulkan.VK13.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+import static org.lwjgl.vulkan.KHRRayTracingPipeline.*;
+import static org.lwjgl.vulkan.KHRSpirv14.VK_KHR_SPIRV_1_4_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRAccelerationStructure.*;
+import static org.lwjgl.vulkan.KHRShaderFloatControls.VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRBufferDeviceAddress.VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME;
+import static org.lwjgl.vulkan.EXTDescriptorIndexing.VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME;
 
 public class Vulkan {
 
@@ -43,6 +51,7 @@ public class Vulkan {
 
     //    public static final boolean DYNAMIC_RENDERING = true;
     public static final boolean DYNAMIC_RENDERING = false;
+    public static final boolean ENABLE_RAY_TRACING = true;
 
     public static final Set<String> VALIDATION_LAYERS;
 
@@ -60,11 +69,23 @@ public class Vulkan {
 
     public static final Set<String> REQUIRED_EXTENSION = getRequiredExtensionSet();
 
+    public static boolean enableRayTracing = true; // Add a variable to control ray tracing
+
     private static Set<String> getRequiredExtensionSet() {
         ArrayList<String> extensions = new ArrayList<>(List.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
 
         if (DYNAMIC_RENDERING) {
             extensions.add(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        }
+
+        if (enableRayTracing) { // Use the new variable
+            extensions.add(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+            extensions.add(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+            extensions.add(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+            extensions.add(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+            extensions.add(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+            extensions.add(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
+            extensions.add(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME);
         }
 
         return new HashSet<>(extensions);
@@ -142,6 +163,13 @@ public class Vulkan {
 
         DeviceManager.init(instance);
 
+        if (enableRayTracing) { // Use the new variable
+            if (!isRayTracingSupported()) {
+                System.err.println("Ray tracing is not supported. Disabling ray tracing.");
+                enableRayTracing = false;
+            }
+        }
+
         createVma();
         MemoryTypes.createMemoryTypes();
 
@@ -149,6 +177,13 @@ public class Vulkan {
 
         setupDepthFormat();
         Renderer.initRenderer();
+    }
+
+    public static void setRayTracing(boolean enable) {
+        enableRayTracing = enable;
+        // Reinitialize Vulkan to apply the change
+        cleanUp();
+        initVulkan(window);
     }
 
     static void createStagingBuffers() {
@@ -401,6 +436,97 @@ public class Vulkan {
 
     public static Device getDevice() {
         return DeviceManager.device;
+    }
+
+    private static void checkRayTracingSupport() {
+        try (MemoryStack stack = stackPush()) {
+            IntBuffer extensionCount = stack.ints(0);
+            vkEnumerateDeviceExtensionProperties(DeviceManager.physicalDevice, (String) null, extensionCount, null);
+
+            VkExtensionProperties.Buffer availableExtensions = VkExtensionProperties.malloc(extensionCount.get(0), stack);
+            vkEnumerateDeviceExtensionProperties(DeviceManager.physicalDevice, (String) null, extensionCount, availableExtensions);
+
+            Set<String> availableExtensionNames = availableExtensions.stream()
+                    .map(VkExtensionProperties::extensionNameString)
+                    .collect(toSet());
+
+            List<String> requiredExtensions = List.of(
+                    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                    VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                    VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+                    VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                    VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+                    VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+                    VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME
+            );
+
+            for (String extension : requiredExtensions) {
+                if (!availableExtensionNames.contains(extension)) {
+                    throw new RuntimeException("Missing required ray tracing extension: " + extension);
+                }
+            }
+
+            VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = VkPhysicalDeviceRayTracingPipelineFeaturesKHR.calloc(stack);
+            VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = VkPhysicalDeviceAccelerationStructureFeaturesKHR.calloc(stack);
+
+            VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.calloc(stack);
+            deviceFeatures2.sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+            deviceFeatures2.pNext(rayTracingPipelineFeatures.address());
+            rayTracingPipelineFeatures.pNext(accelerationStructureFeatures.address());
+
+            vkGetPhysicalDeviceFeatures2(DeviceManager.physicalDevice, deviceFeatures2);
+
+            if (!rayTracingPipelineFeatures.rayTracingPipeline() || !accelerationStructureFeatures.accelerationStructure()) {
+                throw new RuntimeException("Required ray tracing features are not supported");
+            }
+        }
+    }
+
+    public static boolean isRayTracingSupported() {
+        try (MemoryStack stack = stackPush()) {
+            IntBuffer extensionCount = stack.ints(0);
+            vkEnumerateDeviceExtensionProperties(DeviceManager.physicalDevice, (String) null, extensionCount, null);
+
+            VkExtensionProperties.Buffer availableExtensions = VkExtensionProperties.malloc(extensionCount.get(0), stack);
+            vkEnumerateDeviceExtensionProperties(DeviceManager.physicalDevice, (String) null, extensionCount, availableExtensions);
+
+            Set<String> availableExtensionNames = availableExtensions.stream()
+                    .map(VkExtensionProperties::extensionNameString)
+                    .collect(toSet());
+
+            List<String> requiredExtensions = List.of(
+                    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                    VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                    VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+                    VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                    VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+                    VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+                    VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME
+            );
+
+            for (String extension : requiredExtensions) {
+                if (!availableExtensionNames.contains(extension)) {
+                    System.err.println("Missing required ray tracing extension: " + extension);
+                    return false;
+                }
+            }
+
+            VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = VkPhysicalDeviceRayTracingPipelineFeaturesKHR.calloc(stack);
+            VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = VkPhysicalDeviceAccelerationStructureFeaturesKHR.calloc(stack);
+
+            VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.calloc(stack);
+            deviceFeatures2.sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+            deviceFeatures2.pNext(rayTracingPipelineFeatures.address());
+            rayTracingPipelineFeatures.pNext(accelerationStructureFeatures.address());
+
+            vkGetPhysicalDeviceFeatures2(DeviceManager.physicalDevice, deviceFeatures2);
+
+            if (!rayTracingPipelineFeatures.rayTracingPipeline() || !accelerationStructureFeatures.accelerationStructure()) {
+                System.err.println("Required ray tracing features are not supported");
+                return false;
+            }
+        }
+        return true;
     }
 }
 

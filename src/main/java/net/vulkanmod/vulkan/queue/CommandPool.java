@@ -11,13 +11,17 @@ import java.util.ArrayDeque;
 import java.util.List;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK13.*;
 
 public class CommandPool {
     long id;
 
     private final List<CommandBuffer> commandBuffers = new ObjectArrayList<>();
     private final java.util.Queue<CommandBuffer> availableCmdBuffers = new ArrayDeque<>();
+
+    private static final VkCommandBufferAllocateInfo ALLOC_INFO = VkCommandBufferAllocateInfo.calloc().sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+    private static final VkFenceCreateInfo FENCE_INFO = VkFenceCreateInfo.calloc().sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO).flags(VK_FENCE_CREATE_SIGNALED_BIT);
+    private static final VkSemaphoreCreateInfo SEMAPHORE_CREATE_INFO = VkSemaphoreCreateInfo.calloc().sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
 
     CommandPool(int queueFamilyIndex) {
         this.createCommandPool(queueFamilyIndex);
@@ -53,28 +57,16 @@ public class CommandPool {
     private void allocateCommandBuffers(MemoryStack stack) {
         final int size = 10;
 
-        VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack);
-        allocInfo.sType$Default();
-        allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-        allocInfo.commandPool(id);
-        allocInfo.commandBufferCount(size);
-
+        ALLOC_INFO.commandPool(id).level(VK_COMMAND_BUFFER_LEVEL_PRIMARY).commandBufferCount(size);
         PointerBuffer pCommandBuffer = stack.mallocPointer(size);
-        vkAllocateCommandBuffers(Vulkan.getVkDevice(), allocInfo, pCommandBuffer);
-
-        VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.calloc(stack);
-        fenceInfo.sType$Default();
-        fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-
-        VkSemaphoreCreateInfo semaphoreCreateInfo = VkSemaphoreCreateInfo.calloc(stack);
-        semaphoreCreateInfo.sType$Default();
+        vkAllocateCommandBuffers(Vulkan.getVkDevice(), ALLOC_INFO, pCommandBuffer);
 
         for (int i = 0; i < size; ++i) {
             LongBuffer pFence = stack.mallocLong(1);
-            vkCreateFence(Vulkan.getVkDevice(), fenceInfo, null, pFence);
+            vkCreateFence(Vulkan.getVkDevice(), FENCE_INFO, null, pFence);
 
             LongBuffer pSemaphore = stack.mallocLong(1);
-            vkCreateSemaphore(Vulkan.getVkDevice(), semaphoreCreateInfo, null, pSemaphore);
+            vkCreateSemaphore(Vulkan.getVkDevice(), SEMAPHORE_CREATE_INFO, null, pSemaphore);
 
             VkCommandBuffer vkCommandBuffer = new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getVkDevice());
             CommandBuffer commandBuffer = new CommandBuffer(this, vkCommandBuffer, pFence.get(0), pSemaphore.get(0));

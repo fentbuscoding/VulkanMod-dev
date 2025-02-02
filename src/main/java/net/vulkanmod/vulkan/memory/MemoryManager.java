@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK13.*; // Update to Vulkan 1.3
 
 public class MemoryManager {
     private static final boolean DEBUG = false;
@@ -111,6 +112,7 @@ public class MemoryManager {
             bufferInfo.sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
             bufferInfo.size(size);
             bufferInfo.usage(usage);
+            bufferInfo.sharingMode(VK_SHARING_MODE_CONCURRENT); // Performance improvement
 
             VmaAllocationCreateInfo allocationInfo = VmaAllocationCreateInfo.calloc(stack);
             allocationInfo.requiredFlags(properties);
@@ -168,6 +170,7 @@ public class MemoryManager {
             imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             imageInfo.usage(usage);
             imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
+            imageInfo.sharingMode(VK_SHARING_MODE_CONCURRENT); // Performance improvement
             imageInfo.pQueueFamilyIndices(
                     stack.ints(Queue.getQueueFamilies().graphicsFamily, Queue.getQueueFamilies().computeFamily));
 
@@ -196,6 +199,7 @@ public class MemoryManager {
 
             vmaMapMemory(ALLOCATOR, allocation, data);
             consumer.accept(data);
+            vmaFlushAllocation(ALLOCATOR, allocation, 0, VK_WHOLE_SIZE); // Performance improvement
             vmaUnmapMemory(ALLOCATOR, allocation);
         }
     }
@@ -204,6 +208,7 @@ public class MemoryManager {
         PointerBuffer data = MemoryUtil.memAllocPointer(1);
 
         vmaMapMemory(ALLOCATOR, allocation, data);
+        vmaFlushAllocation(ALLOCATOR, allocation, 0, VK_WHOLE_SIZE); // Performance improvement
 
         return data;
     }

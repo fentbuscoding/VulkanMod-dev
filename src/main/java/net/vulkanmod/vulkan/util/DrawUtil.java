@@ -12,7 +12,7 @@ import net.vulkanmod.vulkan.shader.GraphicsPipeline;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.vulkan.VK11;
+import org.lwjgl.vulkan.VK13;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
 public class DrawUtil {
@@ -33,7 +33,7 @@ public class DrawUtil {
         renderer.uploadAndBindUBOs(blitPipeline);
 
         VkCommandBuffer commandBuffer = Renderer.getCommandBuffer();
-        VK11.vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+        VK13.vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
         RenderSystem.enableCull();
     }

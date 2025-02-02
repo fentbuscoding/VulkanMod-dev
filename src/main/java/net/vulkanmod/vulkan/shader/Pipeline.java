@@ -91,11 +91,11 @@ public abstract class Pipeline {
     protected void createDescriptorSetLayout() {
         try (MemoryStack stack = stackPush()) {
             int bindingsSize = this.buffers.size() + imageDescriptors.size();
-
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
 
+            int index = 0;
             for (UBO ubo : this.buffers) {
-                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(ubo.getBinding());
+                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(index++);
                 uboLayoutBinding.binding(ubo.getBinding());
                 uboLayoutBinding.descriptorCount(1);
                 uboLayoutBinding.descriptorType(ubo.getType());
@@ -104,7 +104,7 @@ public abstract class Pipeline {
             }
 
             for (ImageDescriptor imageDescriptor : this.imageDescriptors) {
-                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(imageDescriptor.getBinding());
+                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(index++);
                 samplerLayoutBinding.binding(imageDescriptor.getBinding());
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(imageDescriptor.getType());
