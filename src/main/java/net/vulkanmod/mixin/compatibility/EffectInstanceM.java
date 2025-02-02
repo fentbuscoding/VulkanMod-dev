@@ -90,6 +90,7 @@ public class EffectInstanceM {
     }
 
     private void createShaders(ResourceProvider resourceManager, String vertexShader, String fragShader) {
+
         try {
             String[] vshPathInfo = this.decompose(vertexShader, ':');
             ResourceLocation vshLocation = ResourceLocation.fromNamespaceAndPath(vshPathInfo[0], "shaders/program/" + vshPathInfo[1] + ".vsh");
@@ -118,9 +119,11 @@ public class EffectInstanceM {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
     }
 
     private void setUniformSuppliers(UBO ubo) {
+
         for(Uniform v_uniform : ubo.getUniforms()) {
             com.mojang.blaze3d.shaders.Uniform uniform = this.uniformMap.get(v_uniform.getName());
 
@@ -142,6 +145,7 @@ public class EffectInstanceM {
 
             v_uniform.setSupplier(supplier);
         }
+
     }
 
     private String[] decompose(String string, char c) {
@@ -191,6 +195,7 @@ public class EffectInstanceM {
         }
 
         renderer.uploadAndBindUBOs(pipeline);
+
     }
 
     /**
@@ -211,5 +216,6 @@ public class EffectInstanceM {
                 GlStateManager._bindTexture(0);
             }
         }
+
     }
 }

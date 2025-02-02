@@ -20,7 +20,7 @@ public abstract class GameRendererM {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void onRender(DeltaTracker deltaTracker, boolean bl, CallbackInfo ci) {
-        if (this.minecraft.noRender || !bl || this.minecraft.level == null || !this.minecraft.isGameLoadFinished()) {
+        if (this.minecraft.noRender || !(bl && this.minecraft.level != null && this.minecraft.isGameLoadFinished())) {
             ImageUploadHelper.INSTANCE.submitCommands();
         }
     }
