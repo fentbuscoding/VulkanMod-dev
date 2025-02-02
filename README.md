@@ -3,11 +3,11 @@
 This is a fabric mod that introduces a brand new **Vulkan** based voxel rendering engine to **Minecraft java** in order to both replace the default OpenGL renderer and bring performance improvements.
 
 ### Why?
-- Highly experimental project that overhauls and modernizes the internal renderer for Minecraft. <br>
-- Updates the renderer from OpenGL 3.2 to Vulkan 1.2.  <br>
+- A highly experimental project that overhauls and modernizes the internal renderer for Minecraft. <br>
+- Updates the renderer from OpenGL 3.2 to Vulkan 1.3. (May not work on MacOS)  <br>
 - Provides a potential reference for a future-proof Vulkan codebase for Minecraft Java. <br>
 - Utilizes the VulkanAPI to allow for capabilities not always possible with OpenGL. <br>
-- Including reduced CPU Overhead and use of newer, modern hardware capabilities. <br>
+- This includes reduced CPU overhead and the use of newer, modern hardware capabilities. <br>
 
 ### Demonstration Video:
 
