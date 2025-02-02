@@ -11,7 +11,30 @@ import java.util.ArrayDeque;
 import java.util.List;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.VK13.*;
+import static org.lwjgl.vulkan.VK13.VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+import static org.lwjgl.vulkan.VK13.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+import static org.lwjgl.vulkan.VK13.VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+import static org.lwjgl.vulkan.VK13.VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT;
+import static org.lwjgl.vulkan.VK13.VK_FENCE_CREATE_SIGNALED_BIT;
+import static org.lwjgl.vulkan.VK13.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+import static org.lwjgl.vulkan.VK13.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+import static org.lwjgl.vulkan.VK13.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+import static org.lwjgl.vulkan.VK13.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+import static org.lwjgl.vulkan.VK13.VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+import static org.lwjgl.vulkan.VK13.VK_STRUCTURE_TYPE_SUBMIT_INFO;
+import static org.lwjgl.vulkan.VK13.VK_SUCCESS;
+import static org.lwjgl.vulkan.VK13.vkAllocateCommandBuffers;
+import static org.lwjgl.vulkan.VK13.vkBeginCommandBuffer;
+import static org.lwjgl.vulkan.VK13.vkCreateCommandPool;
+import static org.lwjgl.vulkan.VK13.vkCreateFence;
+import static org.lwjgl.vulkan.VK13.vkCreateSemaphore;
+import static org.lwjgl.vulkan.VK13.vkDestroyCommandPool;
+import static org.lwjgl.vulkan.VK13.vkDestroyFence;
+import static org.lwjgl.vulkan.VK13.vkDestroySemaphore;
+import static org.lwjgl.vulkan.VK13.vkEndCommandBuffer;
+import static org.lwjgl.vulkan.VK13.vkQueueSubmit;
+import static org.lwjgl.vulkan.VK13.vkResetCommandPool;
+import static org.lwjgl.vulkan.VK13.vkResetFences;
 
 public class CommandPool {
     long id;
@@ -97,69 +120,74 @@ public class CommandPool {
         public final VkCommandBuffer handle;
         public final long fence;
         public final long semaphore;
-
+    
         boolean submitted;
         boolean recording;
-
+    
         public CommandBuffer(CommandPool commandPool, VkCommandBuffer handle, long fence, long semaphore) {
             this.commandPool = commandPool;
             this.handle = handle;
             this.fence = fence;
             this.semaphore = semaphore;
         }
-
+    
         public VkCommandBuffer getHandle() {
             return handle;
         }
-
+    
         public long getFence() {
             return fence;
         }
-
+    
         public boolean isSubmitted() {
             return submitted;
         }
-
+    
         public boolean isRecording() {
             return recording;
         }
-
+    
+        public void setSubmitted(boolean submitted) {
+            this.submitted = submitted;
+        }
+    
         public void begin(MemoryStack stack) {
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
+    
             vkBeginCommandBuffer(this.handle, beginInfo);
-
+    
             this.recording = true;
         }
-
+    
         public long submitCommands(MemoryStack stack, VkQueue queue, boolean useSemaphore) {
             long fence = this.fence;
-
+    
             vkEndCommandBuffer(this.handle);
-
+    
             vkResetFences(Vulkan.getVkDevice(), this.fence);
-
+    
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(this.handle));
-
+    
             if (useSemaphore) {
                 submitInfo.pSignalSemaphores(stack.longs(this.semaphore));
             }
-
+    
             vkQueueSubmit(queue, submitInfo, fence);
-
+    
             this.recording = false;
             this.submitted = true;
             return fence;
         }
-
-        public void reset() {
-            this.submitted = false;
-            this.recording = false;
-            this.commandPool.addToAvailable(this);
-        }
-    }
-}
+    
+            public void reset() {
+                this.submitted = false;
+                this.recording = false;
+                this.commandPool.addToAvailable(this);
+            }
+        } // Closing bracket for CommandBuffer class
+    } // Closing bracket for CommandPool class
+    
