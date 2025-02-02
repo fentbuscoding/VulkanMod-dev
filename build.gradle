@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.6.11'
+	id 'fabric-loom' version '1.9.2'
 	id 'maven-publish'
 }
 
@@ -62,7 +62,6 @@ dependencies {
 	//MoltenVK
 	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosNatives"))
 	include(runtimeOnly("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$macosArmNatives"))
-	implementation "org.lwjgl:lwjgl-vulkan:${lwjglVersion}"
 }
 
 processResources {

@@ -6,9 +6,5 @@ pluginManagement {
         }
         mavenCentral()
         gradlePluginPortal()
-        maven {
-            name = 'LWJGL'
-            url = 'https://repo.lwjgl.org/'
-        }
     }
 }
