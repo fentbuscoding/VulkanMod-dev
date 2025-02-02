@@ -2,6 +2,11 @@ package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.memory.buffer.Buffer;
+import net.vulkanmod.vulkan.memory.buffer.IndexBuffer;
+import net.vulkanmod.vulkan.memory.buffer.UniformBuffer;
+import net.vulkanmod.vulkan.memory.buffer.VertexBuffer;
+import net.vulkanmod.vulkan.memory.buffer.index.AutoIndexBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -39,7 +44,7 @@ public class Drawer {
 
     public Drawer() {
         // Index buffers
-        this.quadsIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.QUAD_U16_MAX_VERTEX_COUNT, AutoIndexBuffer.DrawType.QUADS);
+        this.quadsIndexBuffer = new AutoIndexBuffer(AutoIndexBuffer.U16_MAX_VERTEX_COUNT, AutoIndexBuffer.DrawType.QUADS);
         this.quadsIntIndexBuffer = new AutoIndexBuffer(100000, AutoIndexBuffer.DrawType.QUADS);
         this.linesIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.LINES);
         this.debugLineStripIndexBuffer = new AutoIndexBuffer(10000, AutoIndexBuffer.DrawType.DEBUG_LINE_STRIP);
@@ -60,7 +65,7 @@ public class Drawer {
             );
         }
         this.vertexBuffers = new VertexBuffer[framesNum];
-        Arrays.parallelSetAll(this.vertexBuffers, i -> new VertexBuffer(INITIAL_VB_SIZE, MemoryTypes.HOST_MEM));
+        Arrays.setAll(this.vertexBuffers, i -> new VertexBuffer(INITIAL_VB_SIZE, MemoryTypes.HOST_MEM));
 
         if (this.indexBuffers != null) {
             Arrays.stream(this.indexBuffers).iterator().forEachRemaining(
@@ -68,7 +73,7 @@ public class Drawer {
             );
         }
         this.indexBuffers = new IndexBuffer[framesNum];
-        Arrays.parallelSetAll(this.indexBuffers, i -> new IndexBuffer(INITIAL_IB_SIZE, MemoryTypes.HOST_MEM));
+        Arrays.setAll(this.indexBuffers, i -> new IndexBuffer(INITIAL_IB_SIZE, MemoryTypes.HOST_MEM));
 
         if (this.uniformBuffers != null) {
             Arrays.stream(this.uniformBuffers).iterator().forEachRemaining(
@@ -76,7 +81,7 @@ public class Drawer {
             );
         }
         this.uniformBuffers = new UniformBuffer[framesNum];
-        Arrays.parallelSetAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
+        Arrays.setAll(this.uniformBuffers, i -> new UniformBuffer(INITIAL_UB_SIZE, MemoryTypes.HOST_MEM));
     }
 
     public void resetBuffers(int currentFrame) {
@@ -106,6 +111,7 @@ public class Drawer {
 
             if (autoIndexBuffer != null) {
                 int indexCount = autoIndexBuffer.getIndexCount(vertexCount);
+                autoIndexBuffer.checkCapacity(indexCount);
 
                 drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
             }
@@ -190,7 +196,7 @@ public class Drawer {
             case QUADS -> {
                 int indexCount = vertexCount * 3 / 2;
 
-                yield indexCount > AutoIndexBuffer.U16_MAX_INDEX_COUNT
+                yield indexCount > AutoIndexBuffer.U16_MAX_VERTEX_COUNT
                         ? this.quadsIntIndexBuffer : this.quadsIndexBuffer;
             }
             case LINES -> this.linesIndexBuffer;

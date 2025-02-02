@@ -26,7 +26,7 @@ import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
-import static org.lwjgl.vulkan.VK13.*;
+import static org.lwjgl.vulkan.VK10.*;
 
 public class SwapChain extends Framebuffer {
     // Necessary until tearing-control-unstable-v1 is fully implemented on all GPU Drivers for Wayland
@@ -257,7 +257,6 @@ public class SwapChain extends Framebuffer {
     public long getImageView(int i) {
         return this.swapChainImages.get(i).getImageView();
     }
-
 
     private VkSurfaceFormatKHR getFormat(VkSurfaceFormatKHR.Buffer availableFormats) {
         List<VkSurfaceFormatKHR> list = availableFormats.stream().toList();

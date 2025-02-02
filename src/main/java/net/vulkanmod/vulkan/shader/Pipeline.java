@@ -10,7 +10,7 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.device.DeviceManager;
 import net.vulkanmod.vulkan.framebuffer.RenderPass;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.memory.UniformBuffer;
+import net.vulkanmod.vulkan.memory.buffer.UniformBuffer;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.shader.descriptor.ImageDescriptor;
@@ -91,11 +91,11 @@ public abstract class Pipeline {
     protected void createDescriptorSetLayout() {
         try (MemoryStack stack = stackPush()) {
             int bindingsSize = this.buffers.size() + imageDescriptors.size();
+
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.calloc(bindingsSize, stack);
 
-            int index = 0;
             for (UBO ubo : this.buffers) {
-                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(index++);
+                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(ubo.getBinding());
                 uboLayoutBinding.binding(ubo.getBinding());
                 uboLayoutBinding.descriptorCount(1);
                 uboLayoutBinding.descriptorType(ubo.getType());
@@ -104,7 +104,7 @@ public abstract class Pipeline {
             }
 
             for (ImageDescriptor imageDescriptor : this.imageDescriptors) {
-                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(index++);
+                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(imageDescriptor.getBinding());
                 samplerLayoutBinding.binding(imageDescriptor.getBinding());
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(imageDescriptor.getType());

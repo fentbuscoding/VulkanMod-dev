@@ -14,9 +14,9 @@ import static java.util.stream.Collectors.toSet;
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WIN32;
 import static org.lwjgl.glfw.GLFW.glfwGetPlatform;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.VK13.*;
-import static org.lwjgl.vulkan.VK13.vkEnumerateInstanceVersion;
-import static org.lwjgl.vulkan.VK13.vkGetPhysicalDeviceFeatures2;
+import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
+import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
 
 public class Device {
     final VkPhysicalDevice physicalDevice;
@@ -31,8 +31,8 @@ public class Device {
     public final VkPhysicalDeviceFeatures2 availableFeatures;
     public final VkPhysicalDeviceVulkan11Features availableFeatures11;
 
-    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
-    public final boolean vulkan13Support;
+//    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
+//    public final boolean vulkan13Support;
 
     private boolean drawIndirectSupported;
 
@@ -56,11 +56,11 @@ public class Device {
         this.availableFeatures.pNext(this.availableFeatures11);
 
         //Vulkan 1.3
-        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
-        this.availableFeatures13.sType$Default();
-        this.availableFeatures11.pNext(this.availableFeatures13.address());
-
-        this.vulkan13Support = this.physicalDevice.getCapabilities().apiVersion == VK_API_VERSION_1_3;
+//        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
+//        this.availableFeatures13.sType$Default();
+//        this.availableFeatures11.pNext(this.availableFeatures13.address());
+//
+//        this.vulkan13Support = this.device.getCapabilities().apiVersion == VK_API_VERSION_1_3;
 
         vkGetPhysicalDeviceFeatures2(this.physicalDevice, this.availableFeatures);
 
